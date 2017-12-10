@@ -33,7 +33,7 @@ regles(E,expand) :- arg(1,E,X), arg(2,E,T), var(X), compound(T), \+occur_check(X
  
 % verification d occurence
 % regles(x?=t,check) : true si x\==t et x apparait dans t
-regles(E,check) :- arg(1,E,X), arg(2,E,T), var(X), X\==T, occur_check(X,T), !.
+regles(E,check) :- arg(1,E,X), arg(2,E,T), var(X), X\==T,!, occur_check(X,T).
 
 % echange
 % regles(t?=x,orient) : true si t n est pas une variable
@@ -48,11 +48,13 @@ regles(E,decompose) :- arg(1,E,X),arg(2,E,T), compound(X), compound(T), functor(
 regles(E,clash) :- arg(1,E,X),arg(2,E,T), compound(X), compound(T), functor(X,N,A),functor(T,M,B),not( ( N==M , A==B ) ),!.
 
 
-
-% test d occurence
-occur_check(V,T) :- var(V), nonvar(T), !, fail ;
-                    var(V), arg(_,T,X), V==X, ! ;
-                    var(V), arg(_,T,X), compound(X), occur_check(V,X), !.
+ 
+% test d occurence               
+                    
+occur_check(V,T) :- var(T), fail ;
+                    atomic(T), fail ;
+                    compound(T), arg(_,T,X), compound(X), occur_check(V,X), ! ;
+                    compound(T), arg(_,T,X), V==X, !.
 
 
 % application des regles
@@ -76,11 +78,35 @@ application(orient,E,P,Q) :- arg(1,E,T), arg(2,E,X), append([X?=T],P,Q).
 % application(decompose,f(x)?=f(y),f(x)?=f(y)|p,q)  decompose l equation
 application(decompose,E,P,Q) :- arg(1,E,X), arg(2,E,T), X=..XT, new_list(XT,XL), T=..TT,  new_list(TT,TL), croisement(XL,TL,S), append(S,P,Q).
 
-
+application(clash,E,P,Q) :- fail, !.
+application(check,E,P,Q) :- fail, !.
 
 % transforme le système d’équations P en le système d’équations Q par application de la règle de transformation R à l’équation E.
 % reduit(R,E,P,Q) : true si la regle est applicable sur l equation.
-reduit(R,E,P,Q) :- \+regles(E,clash), \+regles(E,check), regles(E,R), !, write(R), application(R,E,P,Q).
+reduit(R,E,P,Q) :- \+regles(E,clash), \+regles(E,check), regles(E,R), !,write(R),write('\n'), application(R,E,P,Q).
+
+
+
+
+unifie([A|P]) :- reduit(_,A,P,Q),!, unifie(Q). 
+unifie([]) :- write('Unification terminee\n').
+
+% choix_premier([E|P],Q,E,R) choisi la premiere equation du systeme pour la resoudre
+choix_premier([E|P],Q,E,R) :- reduit(R,E,P,Q), !.
+
+% choix_pondere([E|P],Q,E,R) choisi la regle ayant le plus petit poids pour l appliquer.
+choix_pondere(P,Q,E,R) :- choix_eq(P,Q,E,R,[]), !.
+                                                                                        
+
+% unifie(P,S) regle qui applique l unification de P selon la relge donnee ( a choisir entre choix_pondere et choix_premier )
+unifie([E|P],choix_premier) :- choix_premier([E|P],Q,E,_), !, unifie(Q,choix_premier).
+unifie([E|P],choix_pondere) :- choix_pondere(P,Q,E,R), !, write('\n'), write(R), write('\n'), unifie(Q,choix_pondere).
+unifie([],S) :- write('Unification par strategie '), write(S), write(' terminee').
+
+
+
+
+
 
 
 
@@ -95,7 +121,23 @@ croisement([A|P],[B|Q],S) :- croisement(P,Q,Z), append([A?=B],Z,S).
 croisement([],[],S) :- S=[].
 
 
-unifie([A|P]) :- reduit(_,A,P,Q),!, unifie(Q). 
-unifie([]) :- write('Unification terminee').
+% clash, check > rename, simplify > orient > decompose > expand
+choix_regle(E,R,N) :- regles(E,clash) -> R='clash', N=1, !; 
+                        regles(E,check) -> R='check', N=2, ! ; 
+                            regles(E,rename) -> R='rename', N=3, ! ; 
+                                regles(E,simplify) -> R='simplify', N=4, ! ; 
+                                    regles(E,orient) -> R='orient', N=5, ! ; 
+                                        regles(E,decompose) -> R='decompose', N=6, ! ; 
+                                            regles(E,expand) -> R='expand', N=7, ! .
+        
+% choix_eq([P,Q,E,R,S) : compare les equations deux a deux et garde a chaque fois celle avec la regle devant etre applique en priorite       
+choix_eq([A|P],Q,E,R,S)   :-  choix_regle(E,RE,CE), choix_regle(A,RA,CA), CE=<CA, append([A],S,L), choix_eq(P,Q,E,RE,L), R=RE, ! ;                            
+                              choix_regle(E,RE,CE), choix_regle(A,RA,CA), CA<CE, append([E],S,L), choix_eq(P,Q,A,RA,L), R=RA .
+choix_eq([],Q,E,R,L)      :-  var(R), choix_regle(E,R,_), application(R,E,L,Q),! ; 
+                              nonvar(R), application(R,E,L,Q) .                    
+
+
+
+
 
 
