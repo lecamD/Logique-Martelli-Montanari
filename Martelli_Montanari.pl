@@ -78,18 +78,18 @@ application(orient,E,P,Q) :- arg(1,E,T), arg(2,E,X), append([X?=T],P,Q).
 % application(decompose,f(x)?=f(y),f(x)?=f(y)|p,q)  decompose l equation
 application(decompose,E,P,Q) :- arg(1,E,X), arg(2,E,T), X=..XT, new_list(XT,XL), T=..TT,  new_list(TT,TL), croisement(XL,TL,S), append(S,P,Q).
 
-application(clash,E,P,Q) :- fail, !.
-application(check,E,P,Q) :- fail, !.
+application(clash,E,P,Q) :- !, fail.
+application(check,E,P,Q) :- !, fail.
 
 % transforme le système d’équations P en le système d’équations Q par application de la règle de transformation R à l’équation E.
 % reduit(R,E,P,Q) : true si la regle est applicable sur l equation.
-reduit(R,E,P,Q) :- \+regles(E,clash), \+regles(E,check), regles(E,R), !,write(R),write('\n'), application(R,E,P,Q).
+reduit(R,E,P,Q) :- \+regles(E,clash), \+regles(E,check), regles(E,R), !, application(R,E,P,Q).
 
 
 
 
 unifie([A|P]) :- reduit(_,A,P,Q),!, unifie(Q). 
-unifie([]) :- write('Unification terminee\n').
+unifie([]) :- echo('Unification terminee\n').
 
 % choix_premier([E|P],Q,E,R) choisi la premiere equation du systeme pour la resoudre
 choix_premier([E|P],Q,E,R) :- reduit(R,E,P,Q), !.
@@ -99,12 +99,16 @@ choix_pondere(P,Q,E,R) :- choix_eq(P,Q,E,R,[]), !.
                                                                                         
 
 % unifie(P,S) regle qui applique l unification de P selon la relge donnee ( a choisir entre choix_pondere et choix_premier )
-unifie([E|P],choix_premier) :- choix_premier([E|P],Q,E,_), !, unifie(Q,choix_premier).
-unifie([E|P],choix_pondere) :- choix_pondere(P,Q,E,R), !, write('\n'), write(R), write('\n'), unifie(Q,choix_pondere).
-unifie([],S) :- write('Unification par strategie '), write(S), write(' terminee').
+unifie([E|P],choix_premier) :- aff_sys([E|P]), choix_premier([E|P],Q,E,R), !,  aff_regle(R,E), unifie(Q,choix_premier).
+unifie([E|P],choix_pondere) :- aff_sys([E|P]), choix_pondere(P,Q,E,R), !, aff_regle(R,E), unifie(Q,choix_pondere).
+unifie([],S) :- echo('Unification par strategie '), echo(S), echo(' terminee').
 
 
 
+
+unif(P,S) :- clr_echo, unifie(P,S).
+
+trace_unif(P,S) :- set_echo, unifie(P,S).
 
 
 
@@ -134,8 +138,11 @@ choix_regle(E,R,N) :- regles(E,clash) -> R='clash', N=1, !;
 choix_eq([A|P],Q,E,R,S)   :-  choix_regle(E,RE,CE), choix_regle(A,RA,CA), CE=<CA, append([A],S,L), choix_eq(P,Q,E,RE,L), R=RE, ! ;                            
                               choix_regle(E,RE,CE), choix_regle(A,RA,CA), CA<CE, append([E],S,L), choix_eq(P,Q,A,RA,L), R=RA .
 choix_eq([],Q,E,R,L)      :-  var(R), choix_regle(E,R,_), application(R,E,L,Q),! ; 
-                              nonvar(R), application(R,E,L,Q) .                    
-
+                              nonvar(R), application(R,E,L,Q) .        
+                              
+                              
+aff_sys(P) :- echo('system: '), echo(P), echo('\n').                            
+aff_regle(R,E) :- echo(R), echo(': '), echo(E), echo('\n').
 
 
 
