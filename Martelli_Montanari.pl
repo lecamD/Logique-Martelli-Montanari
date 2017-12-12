@@ -1,12 +1,12 @@
 % operateur ?=
 :- op(20,xfy,?=).
 
-% Prédicats d affichage fournis
+% Prédicats d\'affichage fournis
 
-% set_echo: ce prédicat active l affichage par le prédicat echo
+% set_echo: ce prédicat active l\'affichage par le prédicat echo
 set_echo :- assert(echo_on).
 
-% clr_echo: ce prédicat inhibe l affichage par le prédicat echo
+% clr_echo: ce prédicat inhibe l\'affichage par le prédicat echo
 clr_echo :- retractall(echo_on).
 
 % echo(T): si le flag echo_on est positionné, echo(T) affiche le terme T
@@ -17,19 +17,19 @@ echo(_).
 
 
 
-% predicat pour l application des regles
+% predicat pour l\'application des règles
 
-% renommage d une variable
+% renommage d\'une variable
 % regles(x?=t,rename) :  true si t est une variable
 regles(E,rename) :- arg(1,E,X),arg(2,E,T),var(X), var(T),!.
 
-% simplification d une constante
-% regles(x?=a,simplify) :  true si a est une constante, si x est une constante, alors x==a
-regles(E,simplify) :- arg(1,E,X), arg(2,E,A), var(X), nonvar(A), ! ; arg(1,E,X), arg(2,E,A), nonvar(X),nonvar(A),X==A,!.
+% simplification d\'une constante
+% regles(x?=a,simplify) :  true si a est une constante. Si x est une constante, alors x==a
+regles(E,simplify) :- arg(1,E,X), arg(2,E,A), var(X), nonvar(A), ! ; arg(1,E,X), arg(2,E,A), nonvar(X),nonvar(A), X==A, !.
 
-% developpement
+% une variable peut sunifier avec un terme composé
 % regles(x?=t,expand) : true si t est composé et x n apparait pas dans t
-regles(E,expand) :- arg(1,E,X), arg(2,E,T), var(X), compound(T), \+occur_check(X,T),!. 
+regles(E,expand) :- arg(1,E,X), arg(2,E,T), var(X), compound(T), \+occur_check(X,T), !. 
  
 % verification d occurence
 % regles(x?=t,check) : true si x\==t et x apparait dans t
@@ -45,7 +45,7 @@ regles(E,decompose) :- arg(1,E,X),arg(2,E,T), compound(X), compound(T), functor(
 
 % conflit entre deux fonctions
 % regle(x?=t,clash) : true si x et t n ont pas le meme symbole OU pas la meme arite
-regles(E,clash) :- arg(1,E,X),arg(2,E,T), compound(X), compound(T), functor(X,N,A),functor(T,M,B),not( ( N==M , A==B ) ),!.
+regles(E,clash) :- arg(1,E,X),arg(2,E,T), compound(X), compound(T), functor(X,N,A), functor(T,M,B), not( ( N==M , A==B ) ), !.
 
 
  
@@ -78,8 +78,8 @@ application(orient,E,P,Q) :- arg(1,E,T), arg(2,E,X), append([X?=T],P,Q).
 % application(decompose,f(x)?=f(y),f(x)?=f(y)|p,q)  decompose l equation
 application(decompose,E,P,Q) :- arg(1,E,X), arg(2,E,T), X=..XT, new_list(XT,XL), T=..TT,  new_list(TT,TL), croisement(XL,TL,S), append(S,P,Q).
 
-application(clash,E,P,Q) :- !, fail.
-application(check,E,P,Q) :- !, fail.
+application(clash,_,_,_) :- fail.
+application(check,_,_,_) :- fail.
 
 % transforme le système d’équations P en le système d’équations Q par application de la règle de transformation R à l’équation E.
 % reduit(R,E,P,Q) : true si la regle est applicable sur l equation.
@@ -89,7 +89,7 @@ reduit(R,E,P,Q) :- \+regles(E,clash), \+regles(E,check), regles(E,R), !, applica
 
 
 unifie([A|P]) :- reduit(_,A,P,Q),!, unifie(Q). 
-unifie([]) :- echo('Unification terminee\n').
+unifie([]) :- echo('\nUnification terminee\n').
 
 % choix_premier([E|P],Q,E,R) choisi la premiere equation du systeme pour la resoudre
 choix_premier([E|P],Q,E,R) :- reduit(R,E,P,Q), !.
@@ -101,18 +101,24 @@ choix_pondere(P,Q,E,R) :- choix_eq(P,Q,E,R,[]), !.
 % unifie(P,S) regle qui applique l unification de P selon la relge donnee ( a choisir entre choix_pondere et choix_premier )
 unifie([E|P],choix_premier) :- aff_sys([E|P]), choix_premier([E|P],Q,E,R), !,  aff_regle(R,E), unifie(Q,choix_premier).
 unifie([E|P],choix_pondere) :- aff_sys([E|P]), choix_pondere(P,Q,E,R), !, aff_regle(R,E), unifie(Q,choix_pondere).
-unifie([],S) :- echo('Unification par strategie '), echo(S), echo(' terminee').
+unifie([],_) :- echo('\nUnification terminée.\n\nRésultat :\n').
 
 
 
-
+% inhibe l\'affichage
 unif(P,S) :- clr_echo, unifie(P,S).
 
+% active l\'affichage
 trace_unif(P,S) :- set_echo, unifie(P,S).
 
 
 
+% initialisation pour le lancement du programme.
+:- initialization main.
 
+main :- write('Algorithme d\'unification de Martelli-Montanari\n\n'),
+        write('trace_unif(P,S). pour l\'exécution de l\'algo avec les traces d\'exécution\nunif(P,S). pour l\'exécution de l\'algo sans traces d\'exécution\n\nP est un système d\'équation du type [X?=K,f(G)?=B]\nS est une stratégie. choix_pondere ou choix_premier\n\n').        
+        
 
 
 % fonctions complémentaires
@@ -135,12 +141,13 @@ choix_regle(E,R,N) :- regles(E,clash) -> R='clash', N=1, !;
                                             regles(E,expand) -> R='expand', N=7, ! .
         
 % choix_eq([P,Q,E,R,S) : compare les equations deux a deux et garde a chaque fois celle avec la regle devant etre applique en priorite       
-choix_eq([A|P],Q,E,R,S)   :-  choix_regle(E,RE,CE), choix_regle(A,RA,CA), CE=<CA, append([A],S,L), choix_eq(P,Q,E,RE,L), R=RE, ! ;                            
-                              choix_regle(E,RE,CE), choix_regle(A,RA,CA), CA<CE, append([E],S,L), choix_eq(P,Q,A,RA,L), R=RA .
+choix_eq([A|P],Q,E,R,S)   :-  choix_regle(E,RE,CE), choix_regle(A,_,CA), CE=<CA, append([A],S,L), choix_eq(P,Q,E,RE,L), R=RE, ! ;                            
+                              choix_regle(E,_,CE), choix_regle(A,RA,CA), CA<CE, append([E],S,L), choix_eq(P,Q,A,RA,L), R=RA .
 choix_eq([],Q,E,R,L)      :-  var(R), choix_regle(E,R,_), application(R,E,L,Q),! ; 
                               nonvar(R), application(R,E,L,Q) .        
                               
-                              
+                        
+% Prédicats pour l\'affichage                        
 aff_sys(P) :- echo('system: '), echo(P), echo('\n').                            
 aff_regle(R,E) :- echo(R), echo(': '), echo(E), echo('\n').
 
