@@ -99,7 +99,7 @@ choix_pondere(P,Q,E,R) :- choix_eq(P,Q,E,R,[]), !.
                                                                                         
 
 % unifie(P,S) regle qui applique l unification de P selon la relge donnee ( a choisir entre choix_pondere et choix_premier )
-unifie([E|P],choix_premier) :- aff_sys([E|P]), choix_premier([E|P],Q,E,R), !, unifie(Q,choix_premier).
+unifie([E|P],choix_premier) :- aff_sys([E|P]), choix_premier([E|P],Q,E,_), !, unifie(Q,choix_premier).
 unifie([E|P],choix_pondere) :- aff_sys([E|P]), choix_pondere(P,Q,E,_), !, unifie(Q,choix_pondere).
 unifie([],_) :- echo('\nUnification terminée.\n\nRésultat :\n').
 
