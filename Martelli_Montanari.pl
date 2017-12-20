@@ -1,12 +1,12 @@
 % operateur ?=
 :- op(20,xfy,?=).
 
-% Prédicats d\'affichage fournis
+% Prédicats daffichage fournis
 
-% set_echo: ce prédicat active l\'affichage par le prédicat echo
+% set_echo: ce prédicat active laffichage par le prédicat echo
 set_echo :- assert(echo_on).
 
-% clr_echo: ce prédicat inhibe l\'affichage par le prédicat echo
+% clr_echo: ce prédicat inhibe laffichage par le prédicat echo
 clr_echo :- retractall(echo_on).
 
 % echo(T): si le flag echo_on est positionné, echo(T) affiche le terme T
@@ -17,13 +17,13 @@ echo(_).
 
 
 
-% predicat pour l\'application des règles
+% predicat pour lapplication des règles
 
-% renommage d\'une variable
+% renommage dune variable
 % regles(x?=t,rename) :  true si t est une variable
 regles(E,rename) :- arg(1,E,X),arg(2,E,T),var(X), var(T),!.
 
-% simplification d\'une constante
+% simplification dune constante
 % regles(x?=a,simplify) :  true si a est une constante. Si x est une constante, alors x==a
 regles(E,simplify) :- arg(1,E,X), arg(2,E,A), var(X), atomic(A), ! ; arg(1,E,X), arg(2,E,A), atomic(X),atomic(A), X==A, !.
 
@@ -83,12 +83,12 @@ application(check,_,_,_) :- fail.
 
 % transforme le système d’équations P en le système d’équations Q par application de la règle de transformation R à l’équation E.
 % reduit(R,E,P,Q) : true si la regle est applicable sur l equation.
-reduit(R,E,P,Q) :- \+regles(E,clash), \+regles(E,check), regles(E,R), aff_regle(R,E), !, application(R,E,P,Q).
+reduit(R,E,P,Q) :- regles(E,R), aff_regle(R,E), !, application(R,E,P,Q).
 
 
 
 
-unifie([A|P]) :- aff_sys([A|P]), reduit(R,A,P,Q),!, aff_regle(R,A), unifie(Q). 
+unifie([A|P]) :- aff_sys([A|P]), reduit(_,A,P,Q),!, unifie(Q). 
 unifie([]) :- echo('\nUnification terminée\n').
 
 % choix_premier([E|P],Q,E,R) choisi la premiere equation du systeme pour la resoudre
@@ -96,19 +96,22 @@ choix_premier([E|P],Q,E,R) :- reduit(R,E,P,Q), !.
 
 % choix_pondere([E|P],Q,E,R) choisi la regle ayant le plus petit poids pour l appliquer.
 choix_pondere(P,Q,E,R) :- choix_eq(P,Q,E,R,[]), !.
-                                                                                        
+    
+    
+% choix_alea(P,Q,E,R) :- length(P,A), C is random(A)+1, arg(C,P,G), reduit(R,G,P,Q), !.
 
 % unifie(P,S) regle qui applique l unification de P selon la relge donnee ( a choisir entre choix_pondere et choix_premier )
 unifie([E|P],choix_premier) :- aff_sys([E|P]), choix_premier([E|P],Q,E,_), !, unifie(Q,choix_premier).
 unifie([E|P],choix_pondere) :- aff_sys([E|P]), choix_pondere(P,Q,E,_), !, unifie(Q,choix_pondere).
+% unifie([E|P],choix_alea) :- aff_sys([E|P]), choix_alea([E|P],Q,E,_), !, unifie(Q,choix_alea).
 unifie([],_) :- echo('\nUnification terminée.\n\nRésultat :\n').
 
 
 
-% inhibe l\'affichage
+% inhibe laffichage
 unif(P,S) :- clr_echo, unifie(P,S).
 
-% active l\'affichage
+% active laffichage
 trace_unif(P,S) :- set_echo, unifie(P,S).
 
 
@@ -148,7 +151,7 @@ choix_eq([],Q,E,R,L)      :-  var(R), choix_regle(E,R,_), aff_regle(R,E), applic
                               nonvar(R), aff_regle(R,E), application(R,E,L,Q) .        
                               
                         
-% Prédicats pour l\'affichage                        
+% Prédicats pour laffichage                        
 aff_sys(P) :- echo('system: '), echo(P), echo('\n').                            
 aff_regle(R,E) :- echo(R), echo(': '), echo(E), echo('\n').
 
